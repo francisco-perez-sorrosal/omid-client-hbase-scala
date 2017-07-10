@@ -36,7 +36,7 @@ class TSOClient(val tsoClientConf: OmidClientConfiguration) extends TSOProtocol 
   logger.info("\t* TSO Client will connect to host:port {} directly", hp)
 
   val system : ActorSystem = ActorSystem.create("tso-client-actor-system");
-  val fsm = system.actorOf(Props(classOf[TSOClientFSM], tsoAddr))
+  val fsm = system.actorOf(Props(classOf[TSOClientFSM], tsoAddr), name = "TSOClientFSM")
 
   val requestRetries = tsoClientConf.getRequestMaxRetries
   val requestTimeoutInMillis = Duration(tsoClientConf.getRequestTimeoutInMs, "millis")
@@ -52,7 +52,7 @@ class TSOClient(val tsoClientConf: OmidClientConfiguration) extends TSOProtocol 
     val requestBuilder = TSOProto.Request.newBuilder
     requestBuilder.setTimestampRequest(TSOProto.TimestampRequest.newBuilder.build)
     val p = Promise[Long]()
-    fsm ! Request(RequestData(requestBuilder.build, requestRetries, requestTimeoutInMillis, p))
+    fsm ! Request(RequestData(requestBuilder.build, RequestStatus.NotSent, requestRetries, requestTimeoutInMillis, p))
     p.future
 
   }
@@ -65,7 +65,7 @@ class TSOClient(val tsoClientConf: OmidClientConfiguration) extends TSOProtocol 
     val requestBuilder = TSOProto.Request.newBuilder
     requestBuilder.setCommitRequest(commitRequestBuilder.build)
     val p = Promise[Long]()
-    fsm ! Request(RequestData(requestBuilder.build, requestRetries, requestTimeoutInMillis, p))
+    fsm ! Request(RequestData(requestBuilder.build, RequestStatus.NotSent, requestRetries, requestTimeoutInMillis, p))
     p.future
 
   }

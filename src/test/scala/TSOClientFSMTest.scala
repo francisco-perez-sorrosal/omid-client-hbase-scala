@@ -73,9 +73,8 @@ class TSOClientFSMSpec extends TestKit(ActorSystem("tso-client-system"))
 
       tsoClientFSM.stateName should be (DisconnectedState)
       inside(tsoClientFSM.stateData) {
-        case ConnectionData(_, tsoAddr, currentChannel, pendingRequests, onTheFlyTimestampRequests, onTheFlyCommitRequests) =>
+        case ConnectionData(_, tsoAddr, currentChannel, onTheFlyTimestampRequests, onTheFlyCommitRequests) =>
           currentChannel shouldBe empty
-          pendingRequests shouldBe empty
           onTheFlyTimestampRequests shouldBe empty
           onTheFlyCommitRequests shouldBe empty
       }
@@ -91,9 +90,8 @@ class TSOClientFSMSpec extends TestKit(ActorSystem("tso-client-system"))
       tsoClientFSM ! Stop
 
       inside(tsoClientFSM.stateData) {
-        case ConnectionData(_, tsoAddr, currentChannel, pendingRequests, onTheFlyTimestampRequests, onTheFlyCommitRequests) =>
+        case ConnectionData(_, tsoAddr, currentChannel, onTheFlyTimestampRequests, onTheFlyCommitRequests) =>
           currentChannel shouldBe empty
-          pendingRequests shouldBe empty
           onTheFlyTimestampRequests shouldBe empty
           onTheFlyCommitRequests shouldBe empty
       }
@@ -123,9 +121,8 @@ class TSOClientFSMSpec extends TestKit(ActorSystem("tso-client-system"))
       }
 
       inside(tsoClientFSM.stateData) {
-        case ConnectionData(_, _, currentChannel, pendingRequests, onTheFlyTimestampRequests, onTheFlyCommitRequests) =>
+        case ConnectionData(_, _, currentChannel, onTheFlyTimestampRequests, onTheFlyCommitRequests) =>
           currentChannel shouldBe Some(connectedChannel)
-          pendingRequests shouldBe empty
           onTheFlyTimestampRequests shouldBe empty
           onTheFlyCommitRequests shouldBe empty
       }
@@ -154,8 +151,7 @@ class TSOClientFSMSpec extends TestKit(ActorSystem("tso-client-system"))
       }
 
       inside(tsoClientFSM.stateData) {
-        case ConnectionData(_, _, _, pendingRequests, onTheFlyTimestampRequests, onTheFlyCommitRequests) =>
-          pendingRequests shouldBe empty
+        case ConnectionData(_, _, _, onTheFlyTimestampRequests, onTheFlyCommitRequests) =>
           onTheFlyTimestampRequests shouldBe empty
           onTheFlyCommitRequests shouldBe empty
       }
@@ -200,8 +196,7 @@ class TSOClientFSMSpec extends TestKit(ActorSystem("tso-client-system"))
       }
 
       inside(tsoClientFSM.stateData) {
-        case ConnectionData(_, _, _, pendingRequests, onTheFlyTimestampRequests, onTheFlyCommitRequests) =>
-          pendingRequests shouldBe empty
+        case ConnectionData(_, _, _, onTheFlyTimestampRequests, onTheFlyCommitRequests) =>
           onTheFlyTimestampRequests shouldBe empty
           onTheFlyCommitRequests shouldBe empty
       }
@@ -244,7 +239,7 @@ class TSOClientFSMSpec extends TestKit(ActorSystem("tso-client-system"))
     val requestBuilder = TSOProto.Request.newBuilder
     requestBuilder.setTimestampRequest(TSOProto.TimestampRequest.newBuilder.build)
     val p = Promise[Long]()
-    fsm ! Request(RequestData(requestBuilder.build, retries, timeout, p))
+    fsm ! Request(RequestData(requestBuilder.build, RequestStatus.NotSent, retries, timeout, p))
     p.future
 
   }
@@ -261,7 +256,7 @@ class TSOClientFSMSpec extends TestKit(ActorSystem("tso-client-system"))
     cells.foreach(cell => commitbuilder.addCellId(cell.getCellId))
     requestBuilder.setCommitRequest(commitbuilder)
     val p = Promise[Long]()
-    fsm ! Request(RequestData(requestBuilder.build, retries, timeout, p))
+    fsm ! Request(RequestData(requestBuilder.build, RequestStatus.NotSent, retries, timeout, p))
     p.future
 
   }
