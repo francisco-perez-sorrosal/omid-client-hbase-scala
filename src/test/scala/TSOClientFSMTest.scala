@@ -3,11 +3,10 @@ package com.fps.omid.client.hbase
 import java.io.IOException
 import java.net.{InetSocketAddress, ServerSocket, Socket}
 
-import org.scalatest.concurrent.ScalaFutures
+import akka.actor.ActorSystem
 import akka.actor.FSM.{CurrentState, SubscribeTransitionCallBack, Transition}
 import akka.actor.SupervisorStrategy.Stop
-import akka.actor.{ActorRef, ActorSystem, Props}
-import akka.testkit.{ImplicitSender, TestActorRef, TestFSMRef, TestKit, TestProbe}
+import akka.testkit.{ImplicitSender, TestFSMRef, TestKit, TestProbe}
 import com.fps.omid.client.hbase.TSOClientFSM._
 import com.fps.omid.client.hbase.TSOClientProtocol.Request
 import com.google.inject.Guice
@@ -15,18 +14,14 @@ import com.typesafe.scalalogging.Logger
 import org.apache.omid.proto.TSOProto
 import org.apache.omid.tso.client.AbortException
 import org.apache.omid.tso.{TSOServer, TSOServerConfig, VoidLeaseManagementModule}
-import org.jboss.netty.bootstrap.ClientBootstrap
 import org.jboss.netty.channel.Channel
-import org.scalatest.matchers.HavePropertyMatcher
 import org.scalatest._
+import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.time.{Millis, Seconds, Span}
 
-import scala.collection.immutable.Queue
-import scala.collection.parallel.immutable.ParHashMap
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Future, Promise}
 import scala.util.Try
-import scala.Some
 
 
 class TSOClientFSMSpec extends TestKit(ActorSystem("tso-client-system"))
@@ -69,9 +64,9 @@ class TSOClientFSMSpec extends TestKit(ActorSystem("tso-client-system"))
     it("should start in the Disconnected state") {
 
       val tsoAddr = new InetSocketAddress("localhost", tsoPortForTest)
-        val tsoClientFSM = TestFSMRef(new TSOClientFSM(tsoAddr))
+      val tsoClientFSM = TestFSMRef(new TSOClientFSM(tsoAddr))
 
-      tsoClientFSM.stateName should be (DisconnectedState)
+      tsoClientFSM.stateName should be(DisconnectedState)
       inside(tsoClientFSM.stateData) {
         case ConnectionData(_, tsoAddr, currentChannel, onTheFlyTimestampRequests, onTheFlyCommitRequests) =>
           currentChannel shouldBe empty
@@ -85,7 +80,7 @@ class TSOClientFSMSpec extends TestKit(ActorSystem("tso-client-system"))
       val tsoAddr = new InetSocketAddress("localhost", tsoPortForTest)
       val tsoClientFSM = TestFSMRef(new TSOClientFSM(tsoAddr))
 
-      tsoClientFSM.stateName should be (DisconnectedState)
+      tsoClientFSM.stateName should be(DisconnectedState)
 
       tsoClientFSM ! Stop
 
@@ -106,7 +101,7 @@ class TSOClientFSMSpec extends TestKit(ActorSystem("tso-client-system"))
       tsoClientFSM ! new SubscribeTransitionCallBack(this.testActor)
 
       var connectedChannel: Channel = null
-      within (Duration(10, "seconds")) {
+      within(Duration(10, "seconds")) {
         val tsF = sendNewStartTimestamp(tsoClientFSM)
 
         expectMsg(CurrentState(tsoClientFSM, DisconnectedState))
@@ -134,7 +129,7 @@ class TSOClientFSMSpec extends TestKit(ActorSystem("tso-client-system"))
       val tsoAddr = new InetSocketAddress("localhost", tsoPortForTest)
       val tsoClientFSM = TestFSMRef(new TSOClientFSM(tsoAddr))
 
-      within (Duration(10, "seconds")) {
+      within(Duration(10, "seconds")) {
         val stF = sendNewStartTimestamp(tsoClientFSM)
 
         whenReady(stF) { result =>
@@ -163,7 +158,7 @@ class TSOClientFSMSpec extends TestKit(ActorSystem("tso-client-system"))
       val tsoAddr = new InetSocketAddress("localhost", tsoPortForTest)
       val tsoClientFSM = TestFSMRef(new TSOClientFSM(tsoAddr))
 
-      within (Duration(10, "seconds")) {
+      within(Duration(10, "seconds")) {
 
         val st1F = sendNewStartTimestamp(tsoClientFSM)
 
@@ -189,7 +184,7 @@ class TSOClientFSMSpec extends TestKit(ActorSystem("tso-client-system"))
 
         whenReady(ct2F.failed) { ex =>
 
-          ex shouldBe an [AbortException]
+          ex shouldBe an[AbortException]
 
         }
 
@@ -214,7 +209,9 @@ class TSOClientFSMSpec extends TestKit(ActorSystem("tso-client-system"))
     while (true) {
       try {
         sock = new Socket(host, port);
-        if (sock != null) { return }
+        if (sock != null) {
+          return
+        }
       } catch {
         case e: IOException => Thread.sleep(sleepTimeMillis)
       }
@@ -239,7 +236,7 @@ class TSOClientFSMSpec extends TestKit(ActorSystem("tso-client-system"))
     val requestBuilder = TSOProto.Request.newBuilder
     requestBuilder.setTimestampRequest(TSOProto.TimestampRequest.newBuilder.build)
     val p = Promise[Long]()
-    fsm ! Request(RequestData(requestBuilder.build, RequestStatus.NotSent, retries, timeout, p))
+    fsm ! Request(RequestData(requestBuilder.build, retries, timeout, p))
     p.future
 
   }
@@ -256,7 +253,7 @@ class TSOClientFSMSpec extends TestKit(ActorSystem("tso-client-system"))
     cells.foreach(cell => commitbuilder.addCellId(cell.getCellId))
     requestBuilder.setCommitRequest(commitbuilder)
     val p = Promise[Long]()
-    fsm ! Request(RequestData(requestBuilder.build, RequestStatus.NotSent, retries, timeout, p))
+    fsm ! Request(RequestData(requestBuilder.build, retries, timeout, p))
     p.future
 
   }

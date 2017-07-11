@@ -52,7 +52,7 @@ class TSOClient(val tsoClientConf: OmidClientConfiguration) extends TSOProtocol 
     val requestBuilder = TSOProto.Request.newBuilder
     requestBuilder.setTimestampRequest(TSOProto.TimestampRequest.newBuilder.build)
     val p = Promise[Long]()
-    fsm ! Request(RequestData(requestBuilder.build, RequestStatus.NotSent, requestRetries, requestTimeoutInMillis, p))
+    fsm ! Request(RequestData(requestBuilder.build, requestRetries, requestTimeoutInMillis, p))
     p.future
 
   }
@@ -65,7 +65,7 @@ class TSOClient(val tsoClientConf: OmidClientConfiguration) extends TSOProtocol 
     val requestBuilder = TSOProto.Request.newBuilder
     requestBuilder.setCommitRequest(commitRequestBuilder.build)
     val p = Promise[Long]()
-    fsm ! Request(RequestData(requestBuilder.build, RequestStatus.NotSent, requestRetries, requestTimeoutInMillis, p))
+    fsm ! Request(RequestData(requestBuilder.build, requestRetries, requestTimeoutInMillis, p))
     p.future
 
   }
